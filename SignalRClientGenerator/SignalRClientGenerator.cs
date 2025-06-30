@@ -1,0 +1,206 @@
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.Text;
+using System.Linq;
+using System.Text;
+using Unfucked;
+
+namespace SignalRClientGenerator;
+
+/// <summary>
+/// Based on <see href="https://github.com/dotnet/roslyn/blob/main/docs/features/incremental-generators.cookbook.md#auto-interface-implementation"/>
+/// </summary>
+[Generator(LanguageNames.CSharp)]
+public class SignalRClientGenerator: IIncrementalGenerator {
+
+    private const string GENERATED_NAMESPACE = "SignalRClientGenerator";
+
+    /// <inheritdoc />
+    public void Initialize(IncrementalGeneratorInitializationContext context) {
+        context.RegisterPostInitializationOutput(ctx => {
+            ctx.AddEmbeddedAttributeDefinition();
+            ctx.AddSource("GenerateSignalRClientAttribute.g.cs", SourceText.From(
+                $$"""
+                  using System;
+                  using Microsoft.CodeAnalysis;
+
+                  namespace {{GENERATED_NAMESPACE}};
+
+                  [AttributeUsage(AttributeTargets.Class, Inherited=false, AllowMultiple=false)]
+                  [Embedded]
+                  internal sealed class GenerateSignalRClientAttribute(Type[] incoming, Type[] outgoing): Attribute {
+
+                      public Type[] incoming { get; } = incoming;
+                      public Type[] outgoing { get; } = outgoing;
+
+                  }
+                  """, Encoding.UTF8));
+
+        });
+
+        IncrementalValuesProvider<ClassModel> provider = context.SyntaxProvider.ForAttributeWithMetadataName($"{GENERATED_NAMESPACE}.GenerateSignalRClientAttribute",
+            (node, ct) => node is ClassDeclarationSyntax,
+            (syntaxContext, ct) => new ClassModel(syntaxContext.TargetSymbol.Name, syntaxContext.TargetSymbol.ContainingNamespace.ToDisplayString(),
+                getInterfaceModels(syntaxContext.Attributes[0], true), getInterfaceModels(syntaxContext.Attributes[0], false)));
+
+        context.RegisterSourceOutput(provider, static (ctx, classModel) => {
+            StringBuilder builder = new();
+
+            StringBuilder interfaceBuilder =
+                new($"public interface I{classModel.name}{(classModel.outgoingInterfaces.Any() ? ":" : "")} {classModel.outgoingInterfaces.Select(i => i.fullyQualifiedName).Join(", ")} {{\n\n");
+
+            builder.AppendLine(
+                $$"""
+                  #nullable enable
+
+                  using System;
+
+                  namespace {{classModel.ns}};
+
+                  public partial class {{classModel.name}}: I{{classModel.name}} {
+
+                      public Microsoft.AspNetCore.SignalR.Client.HubConnection HubConnection { get; }
+                      
+                  """);
+
+            foreach (InterfaceModel outgoingInterface in classModel.outgoingInterfaces) {
+                foreach (MethodModel method in outgoingInterface.methods) {
+                    StringBuilder outgoingMethodSignatureBuilder = new();
+                    outgoingMethodSignatureBuilder.Append($"{method.fqReturnType} {method.name}(");
+                    bool firstParam = true;
+                    foreach (MethodParameterModel methodParam in method.parameters) {
+                        if (firstParam) {
+                            firstParam = false;
+                        } else {
+                            outgoingMethodSignatureBuilder.Append(", ");
+                        }
+                        outgoingMethodSignatureBuilder.Append(methodParam.varArg ? "params " : "")
+                            .Append(methodParam.fqType)
+                            .Append(methodParam.nullable ? "? " : " ")
+                            .Append(methodParam.name)
+                            .Append(methodParam.defaultValue is { } def ? " = " + def : "");
+                    }
+
+                    interfaceBuilder.Append("    ")
+                        .Append(outgoingMethodSignatureBuilder)
+                        .Append(method.parameters.Any() ? ", " : "")
+                        .AppendLine("System.Threading.CancellationToken cancellationToken);\n");
+
+                    builder.Append("    public ")
+                        .Append(outgoingMethodSignatureBuilder)
+                        .Append(") => ")
+                        .Append(method.name)
+                        .Append('(');
+                    foreach (MethodParameterModel methodParam in method.parameters) {
+                        builder.Append(methodParam.name).Append(", ");
+                    }
+                    builder.AppendLine("System.Threading.CancellationToken.None);\n");
+
+                    builder.Append("    public async ")
+                        .Append(outgoingMethodSignatureBuilder)
+                        .Append(method.parameters.Any() ? ", " : "")
+                        .AppendLine("System.Threading.CancellationToken cancellationToken) =>")
+                        .Append("        await Microsoft.AspNetCore.SignalR.Client.HubConnectionExtensions.InvokeAsync(HubConnection, \"")
+                        .Append(method.name)
+                        .Append("\", ");
+                    foreach (MethodParameterModel methodParam in method.parameters) {
+                        builder.Append(methodParam.name).Append(", ");
+                    }
+                    builder.AppendLine("cancellationToken);\n");
+                }
+            }
+
+            StringBuilder onSetHubValueBuilder = new();
+
+            foreach (InterfaceModel incomingInterface in classModel.incomingInterfaces) {
+                foreach (MethodModel method in incomingInterface.methods) {
+                    string eventType = $"{method.name.ToUpperFirstLetter()}Handler";
+                    interfaceBuilder.Append("    delegate ")
+                        .Append(method.fqReturnType)
+                        .Append(' ')
+                        .Append(eventType)
+                        .Append("(I")
+                        .Append(classModel.name)
+                        .Append(" sender");
+                    foreach (MethodParameterModel methodParam in method.parameters) {
+                        interfaceBuilder.Append(", ")
+                            .Append(methodParam.varArg ? "params" : "")
+                            .Append(methodParam.fqType)
+                            .Append(methodParam.nullable ? "? " : " ")
+                            .Append(methodParam.name);
+                    }
+                    interfaceBuilder.AppendLine(");")
+                        .AppendLine($"    event {eventType}? {method.name};\n");
+
+                    builder.Append("    public event I")
+                        .Append(classModel.name)
+                        .Append('.')
+                        .Append(eventType)
+                        .Append("? ")
+                        .Append(method.name)
+                        .AppendLine(";\n");
+
+                    onSetHubValueBuilder.Append("        Microsoft.AspNetCore.SignalR.Client.HubConnectionExtensions.On")
+                        .Append(method.parameters.Any() ? "<" : "");
+                    bool firstParam = true;
+                    foreach (MethodParameterModel methodParam in method.parameters) {
+                        if (firstParam) {
+                            firstParam = false;
+                        } else {
+                            onSetHubValueBuilder.Append(", ");
+                        }
+                        onSetHubValueBuilder.Append(methodParam.fqType)
+                            .Append(methodParam.nullable ? "?" : "");
+                    }
+
+                    onSetHubValueBuilder.Append(method.parameters.Any() ? ">" : "")
+                        .Append($"(HubConnection, \"{method.name}\", async (");
+                    foreach (MethodParameterModel methodParam in method.parameters) {
+                        onSetHubValueBuilder.Append(methodParam.fqType).Append(' ').Append(methodParam.name);
+                    }
+                    onSetHubValueBuilder.Append(") => await (").Append(method.name).Append("?.Invoke(this");
+                    foreach (MethodParameterModel methodParam in method.parameters) {
+                        onSetHubValueBuilder.Append(", ").Append(methodParam.name);
+                    }
+                    onSetHubValueBuilder.AppendLine(") ?? System.Threading.Tasks.Task.CompletedTask));");
+                }
+            }
+            builder.AppendLine($"    public {classModel.name}(Microsoft.AspNetCore.SignalR.Client.HubConnection hubConnection) {{")
+                .AppendLine("        HubConnection = hubConnection;")
+                .Append(onSetHubValueBuilder)
+                .AppendLine("    }");
+
+            builder.AppendLine("}");
+
+            builder.Append(interfaceBuilder).AppendLine("}");
+
+            ctx.AddSource($"{classModel.name}.g.cs", builder.ToString());
+        });
+    }
+
+    private static EquatableList<InterfaceModel> getInterfaceModels(AttributeData attribute, bool isIncoming) {
+        EquatableList<InterfaceModel> interfaces = [];
+        if ((attribute.NamedArguments.FirstOrNull(pair => pair.Key == (isIncoming ? "incoming" : "outgoing"))?.Value ??
+                attribute.ConstructorArguments.ElementAtOrNull(isIncoming ? 0 : 1)) is { IsNull: false } constructorArg) {
+
+            foreach (INamedTypeSymbol interfaceReference in constructorArg.Values.Select(v => v.Value).OfType<INamedTypeSymbol>().Where(arg => arg.TypeKind == TypeKind.Interface)) {
+
+                EquatableList<MethodModel> interfaceMethods = [];
+                foreach (IMethodSymbol interfaceMethod in interfaceReference.GetMembers().OfType<IMethodSymbol>()) {
+
+                    EquatableList<MethodParameterModel> methodParams = [];
+                    foreach (IParameterSymbol methodParam in interfaceMethod.Parameters) {
+                        methodParams.Add(new MethodParameterModel(methodParam.Type.ToDisplayString(), methodParam.Name, methodParam.IsOptional,
+                            methodParam.HasExplicitDefaultValue ? methodParam.ExplicitDefaultValue?.ToString() ?? "default" : null, methodParam.IsParams));
+                    }
+
+                    interfaceMethods.Add(new MethodModel(interfaceMethod.Name, interfaceMethod.ReturnsVoid ? "void" : interfaceMethod.ReturnType.ToDisplayString(), methodParams));
+                }
+
+                interfaces.Add(new InterfaceModel(interfaceReference.ToDisplayString(), interfaceMethods));
+            }
+        }
+        return interfaces;
+    }
+
+}
