@@ -7,12 +7,18 @@
         <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
         <GeneratePackageOnBuild>true</GeneratePackageOnBuild> <!-- Generates a package at build -->
         <IncludeBuildOutput>false</IncludeBuildOutput> <!-- Do not include the generator as a lib dependency -->
-        <Version>0.0.1</Version>
+        <Version>0.0.2</Version>
         <Authors>Ben Hutchison</Authors>
         <Copyright>© 2025 $(Authors)</Copyright>
         <Company>$(Authors)</Company>
         <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+        <PackageProjectUrl>https://github.com/Aldaviva/SignalRClientGenerator</PackageProjectUrl>
+        <RepositoryUrl>https://github.com/Aldaviva/SignalRClientGenerator.git</RepositoryUrl>
+        <PublishRepositoryUrl>true</PublishRepositoryUrl>
+        <RepositoryType>git</RepositoryType>
         <Description>Automatically generate a strongly-typed client for a SignalR server based on shared interfaces.</Description>
+        <PackageTags>signalr client sourcegenerator source-generator generator hubconnection websockets</PackageTags>
+        <PackageReadmeFile>Readme.md</PackageReadmeFile>
         <EmbedUntrackedSources>true</EmbedUntrackedSources>
         <NoWarn>$(NoWarn);NU5128</NoWarn>
     </PropertyGroup>
@@ -25,6 +31,8 @@
     </ItemGroup>
     
     <ItemGroup>
+        <None Include="..\Readme.md" Pack="true" PackagePath="\" />
+        
         <!-- Package the generator in the analyzer directory of the nuget package -->
         <None Include="$(OutputPath)\$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
     </ItemGroup>
