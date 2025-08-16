@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.SignalR;
-using Sample.Shared;
+using SignalRClientGenerator.Sample.Shared;
 
-namespace Sample.Server;
+namespace SignalRClientGenerator.Sample.Server;
 
 public class SampleHub(ILogger<SampleHub> logger): Hub<EventsToClient>, EventsToServer {
 

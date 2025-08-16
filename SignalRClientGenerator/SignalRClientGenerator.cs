@@ -1,6 +1,7 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Unfucked;
@@ -26,6 +27,12 @@ public class SignalRClientGenerator: IIncrementalGenerator {
 
                   namespace {{GENERATED_NAMESPACE}};
 
+                  /// <summary>
+                  /// <para>To autogenerate a strongly-typed SignalR client, add this attribute to a partial class. Pass the interfaces which represent the events sent to and from the client, respectively.</para>
+                  /// <para>Example:</para>
+                  /// <para><c>[GenerateSignalRClient(incoming: [typeof(EventsToClient)], outgoing: [typeof(EventsToServer)])]
+                  /// public partial class SampleClient;</c></para>
+                  /// </summary>
                   [AttributeUsage(AttributeTargets.Class, Inherited=false, AllowMultiple=false)]
                   [Embedded]
                   internal sealed class GenerateSignalRClientAttribute(Type[] incoming, Type[] outgoing): Attribute {
@@ -35,7 +42,6 @@ public class SignalRClientGenerator: IIncrementalGenerator {
 
                   }
                   """, Encoding.UTF8));
-
         });
 
         IncrementalValuesProvider<ClassModel> provider = context.SyntaxProvider.ForAttributeWithMetadataName($"{GENERATED_NAMESPACE}.GenerateSignalRClientAttribute",
@@ -170,11 +176,11 @@ public class SignalRClientGenerator: IIncrementalGenerator {
                 .Append(onSetHubValueBuilder)
                 .AppendLine("    }");
 
-            builder.AppendLine("}");
+            builder.AppendLine("}\n");
 
             builder.Append(interfaceBuilder).AppendLine("}");
 
-            ctx.AddSource($"{classModel.name}.g.cs", builder.ToString());
+            ctx.AddSource($"{classModel.name}.g.cs", builder.ToString().Replace("\r\n", "\n"));
         });
     }
 
@@ -183,8 +189,9 @@ public class SignalRClientGenerator: IIncrementalGenerator {
         if ((attribute.NamedArguments.FirstOrNull(pair => pair.Key == (isIncoming ? "incoming" : "outgoing"))?.Value ??
                 attribute.ConstructorArguments.ElementAtOrNull(isIncoming ? 0 : 1)) is { IsNull: false } constructorArg) {
 
-            foreach (INamedTypeSymbol interfaceReference in constructorArg.Values.Select(v => v.Value).OfType<INamedTypeSymbol>().Where(arg => arg.TypeKind == TypeKind.Interface)) {
-
+            IEnumerable<INamedTypeSymbol> interfaceReferences = constructorArg.Values.Select(v => v.Value).OfType<INamedTypeSymbol>().Where(arg => arg.TypeKind == TypeKind.Interface)
+                .SelectMany(i => i.AllInterfaces.Insert(0, i));
+            foreach (INamedTypeSymbol interfaceReference in interfaceReferences) {
                 EquatableList<MethodModel> interfaceMethods = [];
                 foreach (IMethodSymbol interfaceMethod in interfaceReference.GetMembers().OfType<IMethodSymbol>()) {
 

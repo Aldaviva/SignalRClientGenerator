@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
         <TargetFramework>netstandard2.0</TargetFramework>
@@ -7,7 +7,7 @@
         <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
         <GeneratePackageOnBuild>true</GeneratePackageOnBuild> <!-- Generates a package at build -->
         <IncludeBuildOutput>false</IncludeBuildOutput> <!-- Do not include the generator as a lib dependency -->
-        <Version>0.0.2</Version>
+        <Version>0.0.3</Version>
         <Authors>Ben Hutchison</Authors>
         <Copyright>© 2025 $(Authors)</Copyright>
         <Company>$(Authors)</Company>
@@ -23,37 +23,37 @@
         <NoWarn>$(NoWarn);NU5128</NoWarn>
     </PropertyGroup>
 
-    <!-- Dependencies of the generator's consumers, but not of the generator, as well as provided dependencies (PrivateAssets) -->
+    <!-- Provided-only dependencies to compile and run the generator, as well as dependencies to compile and run the generated code, but not other dependencies to compile or run the generator -->
     <ItemGroup>
-        <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="9.0.6" />
+        <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="9.0.8" />
         <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="4.14.0" PrivateAssets="all" />
         <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.14.0" PrivateAssets="all" />
     </ItemGroup>
-    
+
     <ItemGroup>
         <None Include="..\Readme.md" Pack="true" PackagePath="\" />
-        
+
         <!-- Package the generator in the analyzer directory of the nuget package -->
         <None Include="$(OutputPath)\$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
     </ItemGroup>
-    
-    <!-- Dependencies of the generator but not of its consumers -->
+
+    <!-- Non-provided dependencies to compile and run the generator, but not to compile or run the generated code in a consumer -->
     <ItemGroup>
-        <PackageReference Include="Unfucked" Version="0.0.1-beta.8" GeneratePathProperty="true" PrivateAssets="all" />
+        <PackageReference Include="Unfucked" Version="0.0.1-beta.12" GeneratePathProperty="true" PrivateAssets="all" />
     </ItemGroup>
-    <!-- For generator production usage with package references -->
-    <ItemGroup>
+    <!-- For production generator usage with package references -->
+    <ItemGroup Condition="'$(Configuration)' == 'Release'">
         <!-- Package the dependencies alongside the generator assembly -->
         <None Include="$(PKGUnfucked)\lib\netstandard2.0\Unfucked.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
     </ItemGroup>
     <!-- For generator development with project references -->
-    <!--<PropertyGroup>
+    <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
         <GetTargetPathDependsOn>$(GetTargetPathDependsOn);GetDependencyTargetPaths</GetTargetPathDependsOn>
     </PropertyGroup>
-    <Target Name="GetDependencyTargetPaths">
+    <Target Name="GetDependencyTargetPaths" Condition="'$(Configuration)' == 'Debug'">
         <ItemGroup>
             <TargetPathWithTargetPlatformMoniker Include="$(PKGUnfucked)\lib\netstandard2.0\Unfucked.dll" IncludeRuntimeDependency="false" />
         </ItemGroup>
-    </Target>-->
+    </Target>
 
 </Project>

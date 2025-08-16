@@ -5,11 +5,13 @@ VisualStudioVersion = 17.14.36221.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SignalRClientGenerator", "SignalRClientGenerator\SignalRClientGenerator.csproj", "{C37CDD11-3DED-43E4-88A4-BC5D20CC0F30}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sample.Server", "Sample.Server\Sample.Server.csproj", "{EE56EAD0-BF4B-40A2-8F36-5C5E260C1B55}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Server", "Sample\Server\Server.csproj", "{EE56EAD0-BF4B-40A2-8F36-5C5E260C1B55}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sample.Shared", "Sample.Shared\Sample.Shared.csproj", "{1171AA63-3E05-434F-8358-76B244887AC6}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Shared", "Sample\Shared\Shared.csproj", "{1171AA63-3E05-434F-8358-76B244887AC6}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sample.Client", "Sample.Client\Sample.Client.csproj", "{B2D371F8-0C55-4DAE-AE7C-E19E3D21923B}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Client", "Sample\Client\Client.csproj", "{B2D371F8-0C55-4DAE-AE7C-E19E3D21923B}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Sample", "Sample", "{02EA681E-C7D8-13C7-8484-4AC65E1B71E8}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -36,6 +38,11 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{EE56EAD0-BF4B-40A2-8F36-5C5E260C1B55} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+		{1171AA63-3E05-434F-8358-76B244887AC6} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+		{B2D371F8-0C55-4DAE-AE7C-E19E3D21923B} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {A25C041B-A9AA-49B5-9FF2-E043BACA4F2D}

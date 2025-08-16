@@ -1,7 +1,6 @@
-using Sample.Shared;
-using SignalRClientGenerator;
+using SignalRClientGenerator.Sample.Shared;
 
-namespace Sample.Client;
+namespace SignalRClientGenerator.Sample.Client;
 
 [GenerateSignalRClient(incoming: [typeof(EventsToClient)], outgoing: [typeof(EventsToServer)])]
 public partial class SampleClient;

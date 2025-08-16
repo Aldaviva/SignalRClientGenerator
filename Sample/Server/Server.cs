@@ -1,4 +1,4 @@
-using Sample.Server;
+using SignalRClientGenerator.Sample.Server;
 using Unfucked;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
