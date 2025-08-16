@@ -1,8 +1,9 @@
 ®️ SignalRClientGenerator
 ===
 
-*Automatically generate a strongly-typed .NET client for a SignalR server based on shared interfaces.*
+[![SignalRClientGenerator on NuGet Gallery](https://img.shields.io/nuget/v/SignalRClientGenerator?logo=nuget&color=success)](https://www.nuget.org/packages/SignalRClientGenerator)
 
+*Automatically generate a strongly-typed .NET client for a SignalR server based on shared interfaces.*
 
 <!-- MarkdownTOC autolink="true" bracket="round" autoanchor="false" levels="1,2,3" bullets="1." -->
 
