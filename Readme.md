@@ -39,7 +39,7 @@ The names, parameter types, and return types of both these sets of methods, in t
 #### Example
 
 ##### Shared event definitions in interfaces
-These interfaces should be extracted to a [shared library](https://github.com/Aldaviva/SignalRClientGenerator/tree/master/Sample/Shared) which is depended upon by both the server and client projects.
+These interfaces should be extracted to a [shared library](https://github.com/Aldaviva/SignalRClientGenerator/tree/master/Sample/Shared) which is depended upon by both the server and client projects. These can also inherit from superinterfaces.
 
 ```cs
 public interface EventsToClient {
@@ -99,7 +99,7 @@ By using a source generator, this package transforms the shared interfaces into 
     ```cs
     public partial class SampleClient;
     ```
-1. [Annotate](https://github.com/Aldaviva/SignalRClientGenerator/blob/master/Sample/Client/SampleClient.cs) the class with `SignalRClientGenerator.GenerateSignalRClientAttribute` to the class, specifying zero or more [interfaces that represent the incoming and outgoing events](#shared-event-definitions-in-interfaces).
+1. [Annotate](https://github.com/Aldaviva/SignalRClientGenerator/blob/master/Sample/Client/SampleClient.cs) the class with `SignalRClientGenerator.GenerateSignalRClientAttribute`, specifying zero or more [interfaces that represent the incoming and outgoing events](#shared-event-definitions-in-interfaces).
     ```cs
     [GenerateSignalRClient(incoming: [typeof(EventsToClient)], outgoing: [typeof(EventsToServer)])]
     public partial class SampleClient;
