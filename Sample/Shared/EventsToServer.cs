@@ -2,7 +2,7 @@ namespace SignalRClientGenerator.Sample.Shared;
 
 public interface EventsToServer: SuperEventsToServer {
 
-    Task helloFromClient();
+    Task helloFromClient(string name);
 
 }
 

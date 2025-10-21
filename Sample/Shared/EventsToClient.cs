@@ -2,7 +2,7 @@ namespace SignalRClientGenerator.Sample.Shared;
 
 public interface EventsToClient: SuperEventsToClient {
 
-    Task helloFromServer();
+    Task helloFromServer(DateTimeOffset currentTime);
 
 }
 

@@ -7,7 +7,7 @@ public class Greeter(IHubContext<SampleHub, EventsToClient> hub, ILogger<Greeter
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken) {
         while (!stoppingToken.IsCancellationRequested) {
-            await hub.Clients.All.helloFromServer();
+            await hub.Clients.All.helloFromServer(DateTimeOffset.Now);
             logger.LogInformation("Sent hello to all clients");
             await Task.Delay(TimeSpan.FromSeconds(1), stoppingToken);
         }

@@ -24,13 +24,15 @@
 
 The SignalR server already allows type-safe events using [strongly-typed hubs](https://learn.microsoft.com/en-us/aspnet/core/signalr/hubs?view=aspnetcore-9.0#strongly-typed-hubs). However, the client (including the .NET client, which is written in the same language as the server) does not have any built-in options for event type safety. All events received and sent from the client are weakly-typed using string names for methods and ad-hoc parameter and return types.
 
-This means that if you rename a method, change its parameters, or change the return type, these changes won't flow from the server to the client codebases. The out-of-date client code will continue to compile with its incorrect strings, and will either crash or silently ignore events at runtime. This is made worse by the fact that important SignalR marshalling errors are logged as debug messages in the same class as lots of unimportant messages, so they are very hard to spot and too verbose to leave on.
+This means that if you change a method's name, parameters, or return type, these changes won't flow from the server to the client codebases. The out-of-date client code will continue to compile with its incorrect strings, and will either crash or silently ignore events at runtime. This is made worse by the fact that important SignalR marshalling errors are logged as debug messages in the same class as lots of unimportant messages, so they are very hard to spot and too verbose to leave on.
+
+Even without the safety of strong types, having code completion makes development much simpler, faster, easier, and less annoying. APIs become more self-documenting, and an entire class of problems with incorrect or unknown signatures is eliminated.
 
 ## Solution
 
 ### Server side
 
-> ℹ [Strongly-typed hubs](https://learn.microsoft.com/en-us/aspnet/core/signalr/hubs?view=aspnetcore-9.0#strongly-typed-hubs) are already available built-in to ASP.NET Core SignalR, and do not require this package. The steps to implement them are repeated here because they are recommended if you're going to create a strongly-typed client anyway. To see the novel client-side autogeneration, skip to the [Client side](#client-side) section.
+> ℹ [Strongly-typed hubs](https://learn.microsoft.com/en-us/aspnet/core/signalr/hubs?view=aspnetcore-9.0#strongly-typed-hubs) are already available built-in to ASP.NET Core SignalR, and they do not use this package. The steps to implement them are repeated here as a reminder, and because the client-side usage depends on the example shared code defined here. To see the novel client-side autogeneration, skip to the [Client side](#client-side) section.
 
 To use strongly-typed server-side hubs, you define an interface for the events sent from server to client, and specify that interface as a generic type parameter for the `Hub<TClient>` that you subclass, as well as any `IHubContext<THub, TClient>` that you inject. To define the signatures of the events from the client to the server, you make your `Hub<TClient>` implement the interface of events from the client, and you implement those methods in your hub subclass.
 
@@ -39,18 +41,18 @@ The names, parameter types, and return types of both these sets of methods, in t
 #### Example
 
 ##### Shared event definitions in interfaces
-These interfaces should be extracted to a [shared library](https://github.com/Aldaviva/SignalRClientGenerator/tree/master/Sample/Shared) which is depended upon by both the server and client projects.
+These interfaces should be extracted to a [shared library](https://github.com/Aldaviva/SignalRClientGenerator/tree/master/Sample/Shared) which is depended upon by both the server and client projects. These can also inherit from superinterfaces.
 
 ```cs
 public interface EventsToClient {
 
-    Task helloFromServer();
+    Task helloFromServer(DateTimeOffset currentTime);
 
 }
 
 public interface EventsToServer {
 
-    Task helloFromClient();
+    Task helloFromClient(string name);
 
 }
 ```
@@ -60,8 +62,8 @@ public interface EventsToServer {
 ```cs
 public class SampleHub(ILogger<SampleHub> logger): Hub<EventsToClient>, EventsToServer {
 
-    public async Task helloFromClient() {
-        logger.LogInformation("Client said hello");
+    public async Task helloFromClient(string name) {
+        logger.LogInformation("{name} said hello", name);
     }
 
 }
@@ -74,9 +76,9 @@ public class Greeter(IHubContext<SampleHub, EventsToClient> hub, ILogger<Greeter
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken) {
         while (!stoppingToken.IsCancellationRequested) {
-            await hub.Clients.All.helloFromServer();
+            await hub.Clients.All.helloFromServer(DateTimeOffset.Now);
             logger.LogInformation("Sent hello to all clients");
-            await Task.Delay(TimeSpan.FromSeconds(1), stoppingToken);
+            await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
         }
     }
 
@@ -87,7 +89,7 @@ public class Greeter(IHubContext<SampleHub, EventsToClient> hub, ILogger<Greeter
 
 Normally, you would have to manually call `HubConnection.On` and pass the name of `helloFromServer` as a string, or at least use `nameof(EventsToClient.helloFromServer)` to allow only the name to be refactored.
 
-By using a source generator, this package transforms the shared interfaces into a strongly-typed wrapper for your client-side `HubConnection`. Any time you add, change, or remove an event that is sent to or from the client, it will regenerate the strongly-typed client. This means that a new parameter, changed type, or renamed method will quickly cause an obvious compiler error without a developer having to remember to do anything, instead of waiting to stealthily fail at runtime. It also makes it easier to develop clients because you don't have to manually retype every method signature, they're just provided for you with code completion.
+By using a source generator, this package transforms the shared interfaces into a strongly-typed wrapper for your client-side `HubConnection`. Any time you add, change, or remove an event that is sent to or from the client, it will regenerate the strongly-typed client. This means that a new or changed parameter, changed type, or renamed method will immediately cause an obvious compiler error without a developer having to remember to do anything, instead of waiting to stealthily fail at runtime. It also makes it easier to develop clients because you don't have to manually retype every method signature, they're just provided for you with code completion.
 
 #### Usage
 1. Declare a dependency from your SignalR client [project](https://github.com/Aldaviva/SignalRClientGenerator/blob/master/Sample/Client/Client.csproj) to this generator package.
@@ -99,14 +101,14 @@ By using a source generator, this package transforms the shared interfaces into 
     ```cs
     public partial class SampleClient;
     ```
-1. [Annotate](https://github.com/Aldaviva/SignalRClientGenerator/blob/master/Sample/Client/SampleClient.cs) the class with `SignalRClientGenerator.GenerateSignalRClientAttribute` to the class, specifying zero or more [interfaces that represent the incoming and outgoing events](#shared-event-definitions-in-interfaces).
+1. [Annotate](https://github.com/Aldaviva/SignalRClientGenerator/blob/master/Sample/Client/SampleClient.cs) the class with `SignalRClientGenerator.GenerateSignalRClientAttribute`, specifying zero or more [interfaces that represent the incoming and outgoing events](#shared-event-definitions-in-interfaces).
     ```cs
     [GenerateSignalRClient(incoming: [typeof(EventsToClient)], outgoing: [typeof(EventsToServer)])]
     public partial class SampleClient;
     ```
 1. [Construct](https://github.com/Aldaviva/SignalRClientGenerator/blob/master/Sample/Client/Client.cs) a new instance of your client class, passing your `HubConnection` as an argument.
     ```cs
-    await using HubConnection hub = new HubConnectionBuilder().WithUrl("http://localhost:7447/events").Build();
+    await using HubConnection hub = new HubConnectionBuilder().WithUrl("http://localhost/events").Build();
     SampleClient client = new(hub);
     ```
 1. Connect the hub to the server as with a normal SignalR client.
@@ -115,15 +117,15 @@ By using a source generator, this package transforms the shared interfaces into 
     ```
 
 ##### Receive incoming events in client
-Subscribe to the autogenerated event on your client class, instead of calling `hub.On("helloFromServer", () => {})`.
+Subscribe to the autogenerated event on your client class, instead of calling `hub.On("helloFromServer", (DateTimeOffset time) => {})`.
 ```cs
-client.helloFromServer += async sender => Console.WriteLine("Hello from server");
+client.helloFromServer += async (sender, time) => Console.WriteLine($"It is currently {time}");
 ```
 
 ##### Send outgoing events from client
-Call the autogenerated method on your client class, instead of calling `hub.InvokeAsync("helloFromClient")`.
+Call the autogenerated method on your client class, instead of calling `hub.InvokeAsync("helloFromClient", Environment.UserName)`.
 ```cs
-await client.helloFromClient(cancellationToken);
+await client.helloFromClient(Environment.UserName, cancellationToken);
 ```
 
 ## Sample
