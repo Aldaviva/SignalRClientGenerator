@@ -14,10 +14,10 @@
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="9.0.8" />
-        <PackageReference Include="SignalRClientGenerator" Version="0.0.3" />
+        <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="9.0.10" />
+        <PackageReference Include="SignalRClientGenerator" Version="0.0.4" />
         <!-- <ProjectReference Include="..\..\SignalRClientGenerator\SignalRClientGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" /> -->
-        <PackageReference Include="Unfucked" Version="0.0.1-beta.12" />
+        <PackageReference Include="Unfucked" Version="0.0.1-beta.15" />
     </ItemGroup>
 
 </Project>

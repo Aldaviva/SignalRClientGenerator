@@ -3,6 +3,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using Unfucked;
 
@@ -15,6 +16,9 @@ namespace SignalRClientGenerator;
 public class SignalRClientGenerator: IIncrementalGenerator {
 
     private const string GENERATED_NAMESPACE = "SignalRClientGenerator";
+    private const string GENERATOR_NAME      = nameof(SignalRClientGenerator);
+
+    private static readonly string GENERATOR_VERSION = Assembly.GetExecutingAssembly().GetName().Version.ToString(3);
 
     /// <inheritdoc />
     public void Initialize(IncrementalGeneratorInitializationContext context) {
@@ -35,6 +39,7 @@ public class SignalRClientGenerator: IIncrementalGenerator {
                   /// </summary>
                   [AttributeUsage(AttributeTargets.Class, Inherited=false, AllowMultiple=false)]
                   [Embedded]
+                  [System.Diagnostics.DebuggerNonUserCode, System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage, System.CodeDom.Compiler.GeneratedCode("{{GENERATOR_NAME}}", "{{GENERATOR_VERSION}}")]
                   internal sealed class GenerateSignalRClientAttribute(Type[] incoming, Type[] outgoing): Attribute {
 
                       public Type[] incoming { get; } = incoming;
@@ -53,7 +58,12 @@ public class SignalRClientGenerator: IIncrementalGenerator {
             StringBuilder builder = new();
 
             StringBuilder interfaceBuilder =
-                new($"public interface I{classModel.name}{(classModel.outgoingInterfaces.Any() ? ":" : "")} {classModel.outgoingInterfaces.Select(i => i.fullyQualifiedName).Join(", ")} {{\n\n");
+                new($$"""
+                      [System.CodeDom.Compiler.GeneratedCode("{{GENERATOR_NAME}}", "{{GENERATOR_VERSION}}")]
+                      public interface I{{classModel.name}}{{(classModel.outgoingInterfaces.Any() ? ":" : "")}} {{classModel.outgoingInterfaces.Select(i => i.fullyQualifiedName).Join(", ")}} {
+
+
+                      """);
 
             builder.AppendLine(
                 $$"""
@@ -65,6 +75,7 @@ public class SignalRClientGenerator: IIncrementalGenerator {
 
                   public partial class {{classModel.name}}: I{{classModel.name}} {
 
+                      [System.Diagnostics.DebuggerNonUserCode, System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage, System.CodeDom.Compiler.GeneratedCode("{{GENERATOR_NAME}}", "{{GENERATOR_VERSION}}")]
                       public Microsoft.AspNetCore.SignalR.Client.HubConnection HubConnection { get; }
                       
                   """);
@@ -92,7 +103,9 @@ public class SignalRClientGenerator: IIncrementalGenerator {
                         .Append(method.parameters.Any() ? ", " : "")
                         .AppendLine("System.Threading.CancellationToken cancellationToken);\n");
 
-                    builder.Append("    public ")
+                    builder.AppendLine(
+                            $"    [System.Diagnostics.DebuggerNonUserCode, System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage, System.CodeDom.Compiler.GeneratedCode(\"{GENERATOR_NAME}\", \"{GENERATOR_VERSION}\")]")
+                        .Append("    public ")
                         .Append(outgoingMethodSignatureBuilder)
                         .Append(") => ")
                         .Append(method.name)
@@ -102,7 +115,9 @@ public class SignalRClientGenerator: IIncrementalGenerator {
                     }
                     builder.AppendLine("System.Threading.CancellationToken.None);\n");
 
-                    builder.Append("    public async ")
+                    builder.AppendLine(
+                            $"    [System.Diagnostics.DebuggerNonUserCode, System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage, System.CodeDom.Compiler.GeneratedCode(\"{GENERATOR_NAME}\", \"{GENERATOR_VERSION}\")]")
+                        .Append("    public async ")
                         .Append(outgoingMethodSignatureBuilder)
                         .Append(method.parameters.Any() ? ", " : "")
                         .AppendLine("System.Threading.CancellationToken cancellationToken) =>")
@@ -138,7 +153,8 @@ public class SignalRClientGenerator: IIncrementalGenerator {
                     interfaceBuilder.AppendLine(");")
                         .AppendLine($"    event {eventType}? {method.name};\n");
 
-                    builder.Append("    public event I")
+                    builder.AppendLine($"    [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage, System.CodeDom.Compiler.GeneratedCode(\"{GENERATOR_NAME}\", \"{GENERATOR_VERSION}\")]")
+                        .Append("    public event I")
                         .Append(classModel.name)
                         .Append('.')
                         .Append(eventType)
@@ -171,7 +187,9 @@ public class SignalRClientGenerator: IIncrementalGenerator {
                     onSetHubValueBuilder.AppendLine(") ?? System.Threading.Tasks.Task.CompletedTask));");
                 }
             }
-            builder.AppendLine($"    public {classModel.name}(Microsoft.AspNetCore.SignalR.Client.HubConnection hubConnection) {{")
+            builder.AppendLine(
+                    $"    [System.Diagnostics.DebuggerNonUserCode, System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage, System.CodeDom.Compiler.GeneratedCode(\"{GENERATOR_NAME}\", \"{GENERATOR_VERSION}\")]")
+                .AppendLine($"    public {classModel.name}(Microsoft.AspNetCore.SignalR.Client.HubConnection hubConnection) {{")
                 .AppendLine("        HubConnection = hubConnection;")
                 .Append(onSetHubValueBuilder)
                 .AppendLine("    }");

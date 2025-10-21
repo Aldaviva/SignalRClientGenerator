@@ -9,6 +9,10 @@ public class SampleHub(ILogger<SampleHub> logger): Hub<EventsToClient>, EventsTo
         logger.LogInformation("Client said hello");
     }
 
+    public async Task superEventFromClient() {
+        logger.LogInformation("Client super event");
+    }
+
     public override Task OnConnectedAsync() {
         logger.LogDebug("Client connected");
         return base.OnConnectedAsync();
