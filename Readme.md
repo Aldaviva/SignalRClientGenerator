@@ -20,11 +20,13 @@
 
 [SignalR](https://learn.microsoft.com/en-us/aspnet/core/signalr/introduction) is a real-time message broker that resembles [Socket.IO](https://socket.io). It handles connection, reconnection, multiple transports (including WebSockets) and fallbacks, authentication and authorization, marshalling, queues and consumers, and RPC reply correlation semantics. It provides a server either in-process with ASP.NET Core apps or out-of-process hosted in Azure, and client libraries in .NET, Java, Javascript, and Swift.
 
+Without SignalR, using raw WebSockets is very limited. There is no way to tell which clients are connected at any given time, handle disconnection events, send messages to only a subset of clients, frame messages that span multiple packets, serialize and deserialize types, or correlate a response to its request. You can write all that yourself, which is educational, but after doing it at most once you will want to use SignalR in the future.
+
 ## Problem
 
-The SignalR server already allows type-safe events using [strongly-typed hubs](https://learn.microsoft.com/en-us/aspnet/core/signalr/hubs?view=aspnetcore-9.0#strongly-typed-hubs). However, the client (including the .NET client, which is written in the same language as the server) does not have any built-in options for event type safety. All events received and sent from the client are weakly-typed using string names for methods and ad-hoc parameter and return types.
+The SignalR server already allows type-safe events using [strongly-typed hubs](https://learn.microsoft.com/en-us/aspnet/core/signalr/hubs#strongly-typed-hubs). However, the client (including the .NET client, which is written in the same language as the server) does not have any built-in options for event type safety. All events received and sent from the client are weakly-typed using string names for methods and ad-hoc parameter and return types.
 
-This means that if you change a method's name, parameters, or return type, these changes won't flow from the server to the client codebases. The out-of-date client code will continue to compile with its incorrect strings, and will either crash or silently ignore events at runtime. This is made worse by the fact that important SignalR marshalling errors are logged as debug messages in the same class as lots of unimportant messages, so they are very hard to spot and too verbose to leave on.
+This means that if you change a method's name, parameters, or return type, these changes won't flow from the server to the client codebases. The out-of-date client code will continue to compile with its incorrect strings, and will either crash or silently ignore events at runtime. This is made worse by the fact that [important SignalR](https://github.com/Aldaviva/FreshPager/blob/ed0f1941326dbc1b6525539568dc124cbff21a26/FreshPager/Program.cs#L45) [marshalling errors](https://www.nuget.org/packages/Unfucked.DI) are logged as debug messages in the same class as lots of other unimportant debug messages, so they are very hard to spot and too verbose to leave on.
 
 Even without the safety of strong types, having code completion makes development much simpler, faster, easier, and less annoying. APIs become more self-documenting, and an entire class of problems with incorrect or unknown signatures is eliminated.
 
@@ -32,15 +34,15 @@ Even without the safety of strong types, having code completion makes developmen
 
 ### Server side
 
-> ℹ [Strongly-typed hubs](https://learn.microsoft.com/en-us/aspnet/core/signalr/hubs?view=aspnetcore-9.0#strongly-typed-hubs) are already available built-in to ASP.NET Core SignalR, and they do not use this package. The steps to implement them are repeated here as a reminder, and because the client-side usage depends on the example shared code defined here. To see the novel client-side autogeneration, skip to the [Client side](#client-side) section.
+> ℹ [Strongly-typed hubs](https://learn.microsoft.com/en-us/aspnet/core/signalr/hubs#strongly-typed-hubs) are already available built-in to ASP.NET Core SignalR, and they do not use this package. The steps to implement them are repeated here as a reminder, and because the client-side usage depends on the example shared code defined here. To see the novel client-side autogeneration, skip to the [Client side](#client-side) section.
 
 To use strongly-typed server-side hubs, you define an interface for the events sent from server to client, and specify that interface as a generic type parameter for the `Hub<TClient>` that you subclass, as well as any `IHubContext<THub, TClient>` that you inject. To define the signatures of the events from the client to the server, you make your `Hub<TClient>` implement the interface of events from the client, and you implement those methods in your hub subclass.
 
-The names, parameter types, and return types of both these sets of methods, in the hub and client interfaces provide type safety for the messages sent to and from the server.
+The names, parameter types, and return types of both these sets of methods in the hub and client interfaces provide server-side type safety for the messages sent to and from the server.
 
 #### Example
 
-##### Shared event definitions in interfaces
+##### Share event definitions in interfaces
 These interfaces should be extracted to a [shared library](https://github.com/Aldaviva/SignalRClientGenerator/tree/master/Sample/Shared) which is depended upon by both the server and client projects. These can also inherit from superinterfaces.
 
 ```cs
@@ -57,7 +59,7 @@ public interface EventsToServer {
 }
 ```
 
-##### Hub to receive messages on server
+##### Receive messages on server
 [Subclass](https://github.com/Aldaviva/SignalRClientGenerator/blob/master/Sample/Server/SampleHub.cs) the `Hub<TClient>` abstract class, parameterizing it with the interface of outgoing events, and also implement the interface of incoming events.
 ```cs
 public class SampleHub(ILogger<SampleHub> logger): Hub<EventsToClient>, EventsToServer {
@@ -69,7 +71,7 @@ public class SampleHub(ILogger<SampleHub> logger): Hub<EventsToClient>, EventsTo
 }
 ```
 
-##### Use hub context to send messages from server
+##### Send messages from server
 [Inject](https://github.com/Aldaviva/SignalRClientGenerator/blob/master/Sample/Server/Greeter.cs) an `IHubContext<THub, TClient>` parameterized with the `Hub<TClient>` you subclassed and the outgoing events interface.
 ```cs
 public class Greeter(IHubContext<SampleHub, EventsToClient> hub, ILogger<Greeter> logger): BackgroundService {
@@ -101,7 +103,7 @@ By using a source generator, this package transforms the shared interfaces into 
     ```cs
     public partial class SampleClient;
     ```
-1. [Annotate](https://github.com/Aldaviva/SignalRClientGenerator/blob/master/Sample/Client/SampleClient.cs) the class with `SignalRClientGenerator.GenerateSignalRClientAttribute`, specifying zero or more [interfaces that represent the incoming and outgoing events](#shared-event-definitions-in-interfaces).
+1. [Annotate](https://github.com/Aldaviva/SignalRClientGenerator/blob/master/Sample/Client/SampleClient.cs) the class with `SignalRClientGenerator.GenerateSignalRClientAttribute`, specifying zero or more [interfaces that represent the incoming and outgoing events](#share-event-definitions-in-interfaces).
     ```cs
     [GenerateSignalRClient(incoming: [typeof(EventsToClient)], outgoing: [typeof(EventsToServer)])]
     public partial class SampleClient;

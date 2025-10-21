@@ -1,0 +1,9 @@
+<Project>
+    <PropertyGroup>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <LangVersion>latest</LangVersion>
+        <AssemblyName>SignalRClientGenerator.Sample.$(MSBuildProjectName)</AssemblyName>
+        <RootNamespace>SignalRClientGenerator.Sample.$(MSBuildProjectName.Replace(" ", "_"))</RootNamespace>
+    </PropertyGroup>
+</Project>

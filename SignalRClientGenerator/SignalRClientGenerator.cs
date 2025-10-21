@@ -51,7 +51,7 @@ public class SignalRClientGenerator: IIncrementalGenerator {
 
         IncrementalValuesProvider<ClassModel> provider = context.SyntaxProvider.ForAttributeWithMetadataName($"{GENERATED_NAMESPACE}.GenerateSignalRClientAttribute",
             (node, ct) => node is ClassDeclarationSyntax,
-            (syntaxContext, ct) => new ClassModel(syntaxContext.TargetSymbol.Name, syntaxContext.TargetSymbol.ContainingNamespace.ToDisplayString(),
+            (syntaxContext, ct) => new ClassModel(syntaxContext.TargetSymbol.Name, syntaxContext.TargetSymbol.ContainingNamespace.ToDisplayString(), syntaxContext.TargetSymbol.DeclaredAccessibility,
                 getInterfaceModels(syntaxContext.Attributes[0], true), getInterfaceModels(syntaxContext.Attributes[0], false)));
 
         context.RegisterSourceOutput(provider, static (ctx, classModel) => {
@@ -65,6 +65,16 @@ public class SignalRClientGenerator: IIncrementalGenerator {
 
                       """);
 
+            string classVisibility = classModel.visibility switch {
+                Accessibility.Public               => "public",
+                Accessibility.Internal             => "internal",
+                Accessibility.Protected            => "protected",
+                Accessibility.ProtectedOrInternal  => "protected internal",
+                Accessibility.ProtectedAndInternal => "private protected",
+                Accessibility.Private              => "private",
+                _                                  => string.Empty
+            };
+
             builder.AppendLine(
                 $$"""
                   #nullable enable
@@ -73,7 +83,7 @@ public class SignalRClientGenerator: IIncrementalGenerator {
 
                   namespace {{classModel.ns}};
 
-                  public partial class {{classModel.name}}: I{{classModel.name}} {
+                  {{classVisibility}} partial class {{classModel.name}}: I{{classModel.name}} {
 
                       [System.Diagnostics.DebuggerNonUserCode, System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage, System.CodeDom.Compiler.GeneratedCode("{{GENERATOR_NAME}}", "{{GENERATOR_VERSION}}")]
                       public Microsoft.AspNetCore.SignalR.Client.HubConnection HubConnection { get; }

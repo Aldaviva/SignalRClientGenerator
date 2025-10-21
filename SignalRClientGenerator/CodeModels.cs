@@ -1,6 +1,8 @@
+using Microsoft.CodeAnalysis;
+
 namespace SignalRClientGenerator;
 
-internal record ClassModel(string name, string ns, EquatableList<InterfaceModel> incomingInterfaces, EquatableList<InterfaceModel> outgoingInterfaces);
+internal record ClassModel(string name, string ns, Accessibility visibility, EquatableList<InterfaceModel> incomingInterfaces, EquatableList<InterfaceModel> outgoingInterfaces);
 
 internal record InterfaceModel(string fullyQualifiedName, EquatableList<MethodModel> methods);
 

@@ -5,8 +5,8 @@ namespace SignalRClientGenerator.Sample.Server;
 
 public class SampleHub(ILogger<SampleHub> logger): Hub<EventsToClient>, EventsToServer {
 
-    public async Task helloFromClient() {
-        logger.LogInformation("Client said hello");
+    public async Task helloFromClient(string name) {
+        logger.LogInformation("{name} said hello", name);
     }
 
     public async Task superEventFromClient() {

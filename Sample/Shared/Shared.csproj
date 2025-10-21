@@ -1,11 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net9.0</TargetFramework>
-        <ImplicitUsings>enable</ImplicitUsings>
-        <Nullable>enable</Nullable>
-        <AssemblyName>SignalRClientGenerator.Sample.$(MSBuildProjectName)</AssemblyName>
-        <RootNamespace>SignalRClientGenerator.Sample.$(MSBuildProjectName.Replace(" ", "_"))</RootNamespace>
+        <TargetFramework>netstandard2.0</TargetFramework>
     </PropertyGroup>
 
 </Project>
