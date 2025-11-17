@@ -105,7 +105,7 @@ By using a source generator, this package transforms the shared interfaces into 
     ```
 1. [Annotate](https://github.com/Aldaviva/SignalRClientGenerator/blob/master/Sample/Client/SampleClient.cs) the class with `SignalRClientGenerator.GenerateSignalRClientAttribute`, specifying zero or more [interfaces that represent the incoming and outgoing events](#share-event-definitions-in-interfaces).
     ```cs
-    [GenerateSignalRClient(incoming: [typeof(EventsToClient)], outgoing: [typeof(EventsToServer)])]
+    [GenerateSignalRClient(Incoming = [typeof(EventsToClient)], Outgoing = [typeof(EventsToServer)])]
     public partial class SampleClient;
     ```
 1. [Construct](https://github.com/Aldaviva/SignalRClientGenerator/blob/master/Sample/Client/Client.cs) a new instance of your client class, passing your `HubConnection` as an argument.

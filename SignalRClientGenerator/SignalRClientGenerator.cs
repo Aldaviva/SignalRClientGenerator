@@ -34,16 +34,16 @@ public class SignalRClientGenerator: IIncrementalGenerator {
                   /// <summary>
                   /// <para>To autogenerate a strongly-typed SignalR client, add this attribute to a partial class. Pass the interfaces which represent the events sent to and from the client, respectively.</para>
                   /// <para>Example:</para>
-                  /// <para><c>[GenerateSignalRClient(incoming: [typeof(EventsToClient)], outgoing: [typeof(EventsToServer)])]
-                  /// public partial class SampleClient;</c></para>
+                  /// <para><code>[GenerateSignalRClient(Incoming = [typeof(EventsToClient)], Outgoing = [typeof(EventsToServer)])]
+                  /// public partial class SampleClient;</code></para>
                   /// </summary>
                   [AttributeUsage(AttributeTargets.Class, Inherited=false, AllowMultiple=false)]
                   [Embedded]
                   [System.Diagnostics.DebuggerNonUserCode, System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage, System.CodeDom.Compiler.GeneratedCode("{{GENERATOR_NAME}}", "{{GENERATOR_VERSION}}")]
-                  internal sealed class GenerateSignalRClientAttribute(Type[] incoming, Type[] outgoing): Attribute {
+                  internal sealed class GenerateSignalRClientAttribute(): Attribute {
 
-                      public Type[] incoming { get; } = incoming;
-                      public Type[] outgoing { get; } = outgoing;
+                      public required Type[] Incoming { get; init; }
+                      public Type[] Outgoing { get; init; } = [];
 
                   }
                   """, Encoding.UTF8));
@@ -79,8 +79,6 @@ public class SignalRClientGenerator: IIncrementalGenerator {
                 $$"""
                   #nullable enable
 
-                  using System;
-
                   namespace {{classModel.ns}};
 
                   {{classVisibility}} partial class {{classModel.name}}: I{{classModel.name}} {
@@ -105,7 +103,7 @@ public class SignalRClientGenerator: IIncrementalGenerator {
                             .Append(methodParam.fqType)
                             .Append(methodParam.nullable ? "? " : " ")
                             .Append(methodParam.name)
-                            .Append(methodParam.defaultValue is { } def ? " = " + def : "");
+                            .Append(methodParam.defaultValue is {} def ? " = " + def : "");
                     }
 
                     interfaceBuilder.Append("    ")
@@ -214,11 +212,14 @@ public class SignalRClientGenerator: IIncrementalGenerator {
 
     private static EquatableList<InterfaceModel> getInterfaceModels(AttributeData attribute, bool isIncoming) {
         EquatableList<InterfaceModel> interfaces = [];
-        if ((attribute.NamedArguments.FirstOrNull(pair => pair.Key == (isIncoming ? "incoming" : "outgoing"))?.Value ??
-                attribute.ConstructorArguments.ElementAtOrNull(isIncoming ? 0 : 1)) is { IsNull: false } constructorArg) {
 
-            IEnumerable<INamedTypeSymbol> interfaceReferences = constructorArg.Values.Select(v => v.Value).OfType<INamedTypeSymbol>().Where(arg => arg.TypeKind == TypeKind.Interface)
+        if (attribute.NamedArguments.FirstOrNull(pair => pair.Key == (isIncoming ? "Incoming" : "Outgoing"))?.Value is { IsNull: false } attributePropertyInitializer) {
+            IEnumerable<INamedTypeSymbol> interfaceReferences = attributePropertyInitializer.Values
+                .Select(v => v.Value)
+                .OfType<INamedTypeSymbol>()
+                .Where(arg => arg.TypeKind == TypeKind.Interface)
                 .SelectMany(i => i.AllInterfaces.Insert(0, i));
+
             foreach (INamedTypeSymbol interfaceReference in interfaceReferences) {
                 EquatableList<MethodModel> interfaceMethods = [];
                 foreach (IMethodSymbol interfaceMethod in interfaceReference.GetMembers().OfType<IMethodSymbol>()) {
