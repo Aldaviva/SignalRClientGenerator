@@ -26,27 +26,27 @@ public class SignalRClientGenerator: IIncrementalGenerator {
             ctx.AddEmbeddedAttributeDefinition();
             ctx.AddSource("GenerateSignalRClientAttribute.g.cs", SourceText.From(
                 $$"""
-                  using System;
-                  using Microsoft.CodeAnalysis;
+                using System;
+                using Microsoft.CodeAnalysis;
 
-                  namespace {{GENERATED_NAMESPACE}};
+                namespace {{GENERATED_NAMESPACE}};
 
-                  /// <summary>
-                  /// <para>To autogenerate a strongly-typed SignalR client, add this attribute to a partial class. Pass the interfaces which represent the events sent to and from the client, respectively.</para>
-                  /// <para>Example:</para>
-                  /// <para><code>[GenerateSignalRClient(Incoming = [typeof(EventsToClient)], Outgoing = [typeof(EventsToServer)])]
-                  /// public partial class SampleClient;</code></para>
-                  /// </summary>
-                  [AttributeUsage(AttributeTargets.Class, Inherited=false, AllowMultiple=false)]
-                  [Embedded]
-                  [System.Diagnostics.DebuggerNonUserCode, System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage, System.CodeDom.Compiler.GeneratedCode("{{GENERATOR_NAME}}", "{{GENERATOR_VERSION}}")]
-                  internal sealed class GenerateSignalRClientAttribute(): Attribute {
+                /// <summary>
+                /// <para>To autogenerate a strongly-typed SignalR client, add this attribute to a partial class. Pass the interfaces which represent the events sent to and from the client, respectively.</para>
+                /// <para>Example:</para>
+                /// <para><code>[GenerateSignalRClient(Incoming = [typeof(EventsToClient)], Outgoing = [typeof(EventsToServer)])]
+                /// public partial class SampleClient;</code></para>
+                /// </summary>
+                [AttributeUsage(AttributeTargets.Class, Inherited=false, AllowMultiple=false)]
+                [Embedded]
+                [System.Diagnostics.DebuggerNonUserCode, System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage, System.CodeDom.Compiler.GeneratedCode("{{GENERATOR_NAME}}", "{{GENERATOR_VERSION}}")]
+                internal sealed class GenerateSignalRClientAttribute(): Attribute {
 
-                      public required Type[] Incoming { get; init; }
-                      public Type[] Outgoing { get; init; } = [];
+                    public required Type[] Incoming { get; init; }
+                    public Type[] Outgoing { get; init; } = [];
 
-                  }
-                  """, Encoding.UTF8));
+                }
+                """, Encoding.UTF8));
         });
 
         IncrementalValuesProvider<ClassModel> provider = context.SyntaxProvider.ForAttributeWithMetadataName($"{GENERATED_NAMESPACE}.GenerateSignalRClientAttribute",
@@ -59,11 +59,11 @@ public class SignalRClientGenerator: IIncrementalGenerator {
 
             StringBuilder interfaceBuilder =
                 new($$"""
-                      [System.CodeDom.Compiler.GeneratedCode("{{GENERATOR_NAME}}", "{{GENERATOR_VERSION}}")]
-                      public interface I{{classModel.name}}{{(classModel.outgoingInterfaces.Any() ? ":" : "")}} {{classModel.outgoingInterfaces.Select(i => i.fullyQualifiedName).Join(", ")}} {
+                    [System.CodeDom.Compiler.GeneratedCode("{{GENERATOR_NAME}}", "{{GENERATOR_VERSION}}")]
+                    public interface I{{classModel.name}}{{(classModel.outgoingInterfaces.Any() ? ":" : "")}} {{classModel.outgoingInterfaces.Select(i => i.fullyQualifiedName).Join(", ")}} {
 
 
-                      """);
+                    """);
 
             string classVisibility = classModel.visibility switch {
                 Accessibility.Public               => "public",
@@ -77,16 +77,16 @@ public class SignalRClientGenerator: IIncrementalGenerator {
 
             builder.AppendLine(
                 $$"""
-                  #nullable enable
+                #nullable enable
 
-                  namespace {{classModel.ns}};
+                namespace {{classModel.ns}};
 
-                  {{classVisibility}} partial class {{classModel.name}}: I{{classModel.name}} {
+                {{classVisibility}} partial class {{classModel.name}}: I{{classModel.name}} {
 
-                      [System.Diagnostics.DebuggerNonUserCode, System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage, System.CodeDom.Compiler.GeneratedCode("{{GENERATOR_NAME}}", "{{GENERATOR_VERSION}}")]
-                      public Microsoft.AspNetCore.SignalR.Client.HubConnection HubConnection { get; }
-                      
-                  """);
+                    [System.Diagnostics.DebuggerNonUserCode, System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage, System.CodeDom.Compiler.GeneratedCode("{{GENERATOR_NAME}}", "{{GENERATOR_VERSION}}")]
+                    public Microsoft.AspNetCore.SignalR.Client.HubConnection HubConnection { get; }
+                    
+                """);
 
             foreach (InterfaceModel outgoingInterface in classModel.outgoingInterfaces) {
                 foreach (MethodModel method in outgoingInterface.methods) {
@@ -185,7 +185,13 @@ public class SignalRClientGenerator: IIncrementalGenerator {
 
                     onSetHubValueBuilder.Append(method.parameters.Any() ? ">" : "")
                         .Append($"(HubConnection, \"{method.name}\", async (");
+                    firstParam = true;
                     foreach (MethodParameterModel methodParam in method.parameters) {
+                        if (firstParam) {
+                            firstParam = false;
+                        } else {
+                            onSetHubValueBuilder.Append(", ");
+                        }
                         onSetHubValueBuilder.Append(methodParam.fqType).Append(' ').Append(methodParam.name);
                     }
                     onSetHubValueBuilder.Append(") => await (").Append(method.name).Append("?.Invoke(this");

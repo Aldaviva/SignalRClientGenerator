@@ -7,9 +7,9 @@
         <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
         <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
         <IncludeBuildOutput>false</IncludeBuildOutput> <!-- Do not include the generator as a lib dependency -->
-        <Version>0.0.7</Version>
+        <Version>0.0.8</Version>
         <Authors>Ben Hutchison</Authors>
-        <Copyright>© 2025 $(Authors)</Copyright>
+        <Copyright>© 2026 $(Authors)</Copyright>
         <Company>$(Authors)</Company>
         <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
         <PackageProjectUrl>https://github.com/Aldaviva/SignalRClientGenerator</PackageProjectUrl>
@@ -25,15 +25,15 @@
 
     <!-- Provided-only dependencies to compile and run the generator, as well as dependencies to compile and run the generated code, but not other dependencies to compile or run the generator -->
     <ItemGroup>
-        <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="8.0.22" />
+        <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="8.0.24" />
         <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="4.14.0" PrivateAssets="all" />
         <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="5.0.0" PrivateAssets="all" />
     </ItemGroup>
 
     <!-- Non-provided dependencies to compile and run the generator, but not to compile or run the generated code in a consumer -->
     <ItemGroup>
-        <PackageReference Include="Unfucked" Version="0.0.1-beta.26" GeneratePathProperty="true" PrivateAssets="all" />
-        <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="10.0.0" GeneratePathProperty="true" PrivateAssets="all" />
+        <PackageReference Include="Unfucked" Version="0.0.1-beta.31" GeneratePathProperty="true" PrivateAssets="all" />
+        <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="10.0.3" GeneratePathProperty="true" PrivateAssets="all" />
     </ItemGroup>
 
     <ItemGroup>
