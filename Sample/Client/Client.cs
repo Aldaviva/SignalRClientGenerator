@@ -8,12 +8,13 @@ await using HubConnection     hub = new HubConnectionBuilder().WithUrl("http://l
 
 hub.Closed += async _ => Console.WriteLine("Disconnected");
 
-SampleClient client = new(hub);
-client.helloFromServer      += async (_, time) => Console.WriteLine($"It is currently {time}");
+ISampleClient client = new SampleClient(hub);
+client.helloFromServer += async (_, time) => Console.WriteLine($"It is currently {time}");
+
 client.superEventFromServer += async _ => Console.WriteLine("Super event from server");
 
 Console.WriteLine("Connecting");
-await hub.StartAsync(cts.Token);
+await client.HubConnection.StartAsync(cts.Token);
 Console.WriteLine("Connected");
 
 await client.superEventFromClient(CancellationToken.None);

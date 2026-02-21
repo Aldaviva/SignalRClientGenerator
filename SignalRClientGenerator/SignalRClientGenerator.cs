@@ -32,7 +32,7 @@ public class SignalRClientGenerator: IIncrementalGenerator {
                 namespace {{GENERATED_NAMESPACE}};
 
                 /// <summary>
-                /// <para>To autogenerate a strongly-typed SignalR client, add this attribute to a partial class. Pass the interfaces which represent the events sent to and from the client, respectively.</para>
+                /// <para>To autogenerate a strongly-typed SignalR client, add this attribute to a partial class. Pass the interfaces which represent the events sent to and from the client.</para>
                 /// <para>Example:</para>
                 /// <para><code>[GenerateSignalRClient(Incoming = [typeof(EventsToClient)], Outgoing = [typeof(EventsToServer)])]
                 /// public partial class SampleClient;</code></para>
@@ -42,7 +42,10 @@ public class SignalRClientGenerator: IIncrementalGenerator {
                 [System.Diagnostics.DebuggerNonUserCode, System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage, System.CodeDom.Compiler.GeneratedCode("{{GENERATOR_NAME}}", "{{GENERATOR_VERSION}}")]
                 internal sealed class GenerateSignalRClientAttribute(): Attribute {
 
+                    /// <summary>Zero or more interfaces of SignalR messages sent to the client.</summary>
                     public required Type[] Incoming { get; init; }
+                    
+                    /// <summary>Zero or more interfaces of SignalR messages sent from the client.</summary>
                     public Type[] Outgoing { get; init; } = [];
 
                 }
@@ -59,6 +62,7 @@ public class SignalRClientGenerator: IIncrementalGenerator {
 
             StringBuilder interfaceBuilder =
                 new($$"""
+                    /// <summary>Interface for <see cref="{{classModel.name}}" />.</summary>
                     [System.CodeDom.Compiler.GeneratedCode("{{GENERATOR_NAME}}", "{{GENERATOR_VERSION}}")]
                     public interface I{{classModel.name}}{{(classModel.outgoingInterfaces.Any() ? ":" : "")}} {{classModel.outgoingInterfaces.Select(i => i.fullyQualifiedName).Join(", ")}} {
 
@@ -83,10 +87,15 @@ public class SignalRClientGenerator: IIncrementalGenerator {
 
                 {{classVisibility}} partial class {{classModel.name}}: I{{classModel.name}} {
 
+                    /// <inheritdoc cref="I{{classModel.name}}.HubConnection" />
                     [System.Diagnostics.DebuggerNonUserCode, System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage, System.CodeDom.Compiler.GeneratedCode("{{GENERATOR_NAME}}", "{{GENERATOR_VERSION}}")]
                     public Microsoft.AspNetCore.SignalR.Client.HubConnection HubConnection { get; }
                     
                 """);
+
+            interfaceBuilder.AppendLine("    /// <summary>Sends and receives SignalR messages.</summary>")
+                .AppendLine("    public Microsoft.AspNetCore.SignalR.Client.HubConnection HubConnection { get; }")
+                .AppendLine();
 
             foreach (InterfaceModel outgoingInterface in classModel.outgoingInterfaces) {
                 foreach (MethodModel method in outgoingInterface.methods) {
@@ -106,12 +115,23 @@ public class SignalRClientGenerator: IIncrementalGenerator {
                             .Append(methodParam.defaultValue is {} def ? " = " + def : "");
                     }
 
-                    interfaceBuilder.Append("    ")
+                    interfaceBuilder.Append("    /// <inheritdoc cref=\"")
+                        .Append(outgoingInterface.fullyQualifiedName)
+                        .Append('.')
+                        .Append(method.name)
+                        .AppendLine("\" />")
+                        .AppendLine("    /// <param name=\"cancellationToken\">Cancel sending message from client</param>")
+                        .Append("    ")
                         .Append(outgoingMethodSignatureBuilder)
                         .Append(method.parameters.Any() ? ", " : "")
                         .AppendLine("System.Threading.CancellationToken cancellationToken);\n");
 
-                    builder.AppendLine(
+                    builder.Append("    /// <inheritdoc cref=\"")
+                        .Append(outgoingInterface.fullyQualifiedName)
+                        .Append('.')
+                        .Append(method.name)
+                        .AppendLine("\" />")
+                        .AppendLine(
                             $"    [System.Diagnostics.DebuggerNonUserCode, System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage, System.CodeDom.Compiler.GeneratedCode(\"{GENERATOR_NAME}\", \"{GENERATOR_VERSION}\")]")
                         .Append("    public ")
                         .Append(outgoingMethodSignatureBuilder)
@@ -123,7 +143,8 @@ public class SignalRClientGenerator: IIncrementalGenerator {
                     }
                     builder.AppendLine("System.Threading.CancellationToken.None);\n");
 
-                    builder.AppendLine(
+                    builder.AppendLine("    /// <inheritdoc />")
+                        .AppendLine(
                             $"    [System.Diagnostics.DebuggerNonUserCode, System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage, System.CodeDom.Compiler.GeneratedCode(\"{GENERATOR_NAME}\", \"{GENERATOR_VERSION}\")]")
                         .Append("    public async ")
                         .Append(outgoingMethodSignatureBuilder)
@@ -144,7 +165,13 @@ public class SignalRClientGenerator: IIncrementalGenerator {
             foreach (InterfaceModel incomingInterface in classModel.incomingInterfaces) {
                 foreach (MethodModel method in incomingInterface.methods) {
                     string eventType = $"{method.name.ToUpperFirstLetter()}Handler";
-                    interfaceBuilder.Append("    delegate ")
+                    interfaceBuilder.AppendLine("    /// <param name=\"sender\">SignalR client</param>")
+                        .Append("    /// <inheritdoc cref=\"")
+                        .Append(incomingInterface.fullyQualifiedName)
+                        .Append('.')
+                        .Append(method.name)
+                        .AppendLine("\" />")
+                        .Append("    delegate ")
                         .Append(method.fqReturnType)
                         .Append(' ')
                         .Append(eventType)
@@ -158,10 +185,22 @@ public class SignalRClientGenerator: IIncrementalGenerator {
                             .Append(methodParam.nullable ? "? " : " ")
                             .Append(methodParam.name);
                     }
+
                     interfaceBuilder.AppendLine(");")
+                        .AppendLine()
+                        .Append("    /// <inheritdoc cref=\"")
+                        .Append(incomingInterface.fullyQualifiedName)
+                        .Append('.')
+                        .Append(method.name)
+                        .AppendLine("\" path=\"/*[(self::summary or self::remarks or self::seealso)]\" />")
                         .AppendLine($"    event {eventType}? {method.name};\n");
 
-                    builder.AppendLine($"    [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage, System.CodeDom.Compiler.GeneratedCode(\"{GENERATOR_NAME}\", \"{GENERATOR_VERSION}\")]")
+                    builder.Append("    /// <inheritdoc cref=\"I")
+                        .Append(classModel.name)
+                        .Append('.')
+                        .Append(method.name)
+                        .AppendLine("\" />")
+                        .AppendLine($"    [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage, System.CodeDom.Compiler.GeneratedCode(\"{GENERATOR_NAME}\", \"{GENERATOR_VERSION}\")]")
                         .Append("    public event I")
                         .Append(classModel.name)
                         .Append('.')
@@ -201,7 +240,9 @@ public class SignalRClientGenerator: IIncrementalGenerator {
                     onSetHubValueBuilder.AppendLine(") ?? System.Threading.Tasks.Task.CompletedTask));");
                 }
             }
-            builder.AppendLine(
+            builder.AppendLine("    /// <summary>Creates a strongly-typed SignalR client for a given <paramref name=\"hubConnection\"/>.</summary>")
+                .AppendLine("    /// <param name=\"hubConnection\">Sends and receives SignalR messages. Created by <see cref=\"Microsoft.AspNetCore.SignalR.Client.HubConnectionBuilder\"/>.</param>")
+                .AppendLine(
                     $"    [System.Diagnostics.DebuggerNonUserCode, System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage, System.CodeDom.Compiler.GeneratedCode(\"{GENERATOR_NAME}\", \"{GENERATOR_VERSION}\")]")
                 .AppendLine($"    public {classModel.name}(Microsoft.AspNetCore.SignalR.Client.HubConnection hubConnection) {{")
                 .AppendLine("        HubConnection = hubConnection;")

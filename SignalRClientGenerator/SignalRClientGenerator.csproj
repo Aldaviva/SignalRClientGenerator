@@ -7,7 +7,7 @@
         <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
         <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
         <IncludeBuildOutput>false</IncludeBuildOutput> <!-- Do not include the generator as a lib dependency -->
-        <Version>0.0.8</Version>
+        <Version>0.0.9</Version>
         <Authors>Ben Hutchison</Authors>
         <Copyright>© 2026 $(Authors)</Copyright>
         <Company>$(Authors)</Company>
