@@ -11,7 +11,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="10.0.3" />
+        <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="10.0.5" />
         <PackageReference Include="SignalRClientGenerator" Version="0.0.9" />
         <!-- <ProjectReference Include="..\..\SignalRClientGenerator\SignalRClientGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" /> -->
         <PackageReference Include="Unfucked" Version="0.0.1-beta.31" />
